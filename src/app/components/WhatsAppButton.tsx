@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { ProductStorage } from '../../utils/productStorage';
 
 // Replace with your WhatsApp number (with country code, no + or spaces)
-const WHATSAPP_NUMBER = '91+8928099523';
+const WHATSAPP_NUMBER = '918928099523';
 
 export const WhatsAppButton = () => {
   const [productCount, setProductCount] = useState(0);
