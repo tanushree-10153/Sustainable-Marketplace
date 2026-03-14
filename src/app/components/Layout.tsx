@@ -2,6 +2,7 @@ import { Outlet, Link, useNavigate } from 'react-router';
 import { useAuth } from '../context/AuthContext';
 import { Menu, X, ShoppingBag } from 'lucide-react';
 import { useState } from 'react';
+import { WhatsAppButton } from './WhatsAppButton';
 
 export const Layout = () => {
   const { user, logout, isAuthenticated } = useAuth();
@@ -150,6 +151,8 @@ export const Layout = () => {
       <main>
         <Outlet />
       </main>
+
+      <WhatsAppButton />
 
       {/* Footer */}
       <footer className="bg-gray-50 border-t border-gray-200 mt-20">
