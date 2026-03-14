@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router';
 import { Upload, Image as ImageIcon, Package } from 'lucide-react';
 import { ProductStorage } from '../../utils/productStorage';
 import { sendEmail } from '../../utils/emailService';
+import { sendWhatsApp } from '../../utils/whatsappService';
 
 export const Seller = () => {
   const { user } = useAuth();
@@ -68,13 +69,19 @@ export const Seller = () => {
         return;
       }
 
-      // Send real email notification
       sendEmail({
         user_name: sellerName,
         user_email: sellerEmail,
         subject: 'Product Listed Successfully',
         message: `Hi ${sellerName}, your product "${productName}" has been listed on the marketplace for ₹${price}. It is now visible to buyers.`,
       });
+
+      if (user?.whatsapp) {
+        sendWhatsApp(
+          user.whatsapp,
+          `🛍️ Hi ${sellerName}! Your product *"${productName}"* has been listed on UPCYCLE for ₹${price}. Buyers can now find it at https://sustainable-fashion-marketplace.netlify.app/buyer`
+        );
+      }
 
       alert(`Product uploaded successfully! Total products in marketplace: ${savedProducts.length}`);
 

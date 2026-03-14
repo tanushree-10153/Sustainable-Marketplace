@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router';
 import { useAuth } from '../context/AuthContext';
-import { UserPlus, Mail, Lock, User } from 'lucide-react';
+import { UserPlus, Mail, Lock, User, Phone } from 'lucide-react';
 
 export const Register = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [whatsapp, setWhatsapp] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const { register } = useAuth();
@@ -29,7 +30,7 @@ export const Register = () => {
       return;
     }
 
-    const success = register(name, email, password);
+    const success = register(name, email, password, whatsapp);
     if (success) {
       alert('Registration successful! Please login.');
       navigate('/login');
@@ -87,6 +88,27 @@ export const Register = () => {
                   required
                 />
               </div>
+            </div>
+
+            <div>
+              <label htmlFor="whatsapp" className="block text-sm font-medium text-gray-700 mb-2">
+                WhatsApp Number (with country code)
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Phone className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  id="whatsapp"
+                  type="tel"
+                  value={whatsapp}
+                  onChange={(e) => setWhatsapp(e.target.value)}
+                  className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all"
+                  placeholder="919876543210"
+                  required
+                />
+              </div>
+              <p className="text-xs text-gray-500 mt-1">Enter with country code, no + or spaces (e.g. 919876543210)</p>
             </div>
 
             <div>

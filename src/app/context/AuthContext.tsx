@@ -1,16 +1,18 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { sendEmail } from '../../utils/emailService';
+import { sendWhatsApp } from '../../utils/whatsappService';
 
 interface User {
   name: string;
   email: string;
+  whatsapp: string;
   registrationDate: string;
 }
 
 interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => boolean;
-  register: (name: string, email: string, password: string) => boolean;
+  register: (name: string, email: string, password: string, whatsapp: string) => boolean;
   logout: () => void;
   isAuthenticated: boolean;
 }
@@ -27,7 +29,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  const register = (name: string, email: string, password: string): boolean => {
+  const register = (name: string, email: string, password: string, whatsapp: string): boolean => {
     const users = JSON.parse(localStorage.getItem('users') || '[]');
     
     if (users.find((u: any) => u.email === email)) {
@@ -35,19 +37,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return false;
     }
 
-    const newUser = {
-      name,
-      email,
-      password,
-      registrationDate: new Date().toISOString(),
-    };
-
+    const newUser = { name, email, password, whatsapp, registrationDate: new Date().toISOString() };
     users.push(newUser);
     localStorage.setItem('users', JSON.stringify(users));
-    
-    // Simulate email notification
-    console.log(`✉️ Email sent to admin: New user registered - ${name} (${email})`);
-    
     return true;
   };
 
@@ -59,6 +51,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const userData = {
         name: foundUser.name,
         email: foundUser.email,
+        whatsapp: foundUser.whatsapp,
         registrationDate: foundUser.registrationDate,
       };
       setUser(userData);
@@ -70,6 +63,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         subject: 'Login Successful',
         message: `Hi ${foundUser.name}, you successfully logged in at ${new Date().toLocaleString()}. If this wasn't you, please contact support.`,
       });
+
+      if (foundUser.whatsapp) {
+        sendWhatsApp(
+          foundUser.whatsapp,
+          `Hi ${foundUser.name}! 👋 You just logged in to UPCYCLE at ${new Date().toLocaleString()}. If this wasn't you, please contact support.`
+        );
+      }
 
       return true;
     }
