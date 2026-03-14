@@ -52,16 +52,14 @@ export const Home = () => {
   });
 
   useEffect(() => {
-    // Load uploaded products from localStorage
-    const storedProducts = ProductStorage.loadProducts();
-    setUploadedProducts(storedProducts.slice(0, 4)); // Show latest 4 products
-
-    // Calculate stats based on uploaded products
-    const totalProducts = storedProducts.length;
-    setStats({
-      clothesUpcycled: totalProducts,
-      waterSaved: totalProducts * 1000, // Rough estimate: 1000L water saved per product
-      wasteReduced: totalProducts * 5, // Rough estimate: 5kg waste reduced per product
+    ProductStorage.loadProducts().then((storedProducts) => {
+      setUploadedProducts(storedProducts.slice(0, 4));
+      const totalProducts = storedProducts.length;
+      setStats({
+        clothesUpcycled: totalProducts,
+        waterSaved: totalProducts * 1000,
+        wasteReduced: totalProducts * 5,
+      });
     });
   }, []);
 

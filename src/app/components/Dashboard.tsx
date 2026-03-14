@@ -38,9 +38,10 @@ export const Dashboard = () => {
     }
 
     // Load user's products
-    const allProducts = ProductStorage.loadProducts();
-    const userProducts = allProducts.filter((p: Product) => p.sellerEmail === user?.email);
-    setMyProducts(userProducts);
+    ProductStorage.loadProducts().then((allProducts) => {
+      const userProducts = allProducts.filter((p: Product) => p.sellerEmail === user?.email);
+      setMyProducts(userProducts);
+    });
 
     // Load user's orders
     const allOrders = JSON.parse(localStorage.getItem('orders') || '[]');
