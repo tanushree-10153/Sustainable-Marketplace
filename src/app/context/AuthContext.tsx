@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { sendEmail } from '../../utils/emailService';
-import { sendWhatsApp } from '../../utils/whatsappService';
 
 interface User {
   name: string;
@@ -63,13 +62,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         subject: 'Login Successful',
         message: `Hi ${foundUser.name}, you successfully logged in at ${new Date().toLocaleString()}. If this wasn't you, please contact support.`,
       });
-
-      if (foundUser.whatsapp) {
-        sendWhatsApp(
-          foundUser.whatsapp,
-          `Hi ${foundUser.name}! 👋 You just logged in to UPCYCLE at ${new Date().toLocaleString()}. If this wasn't you, please contact support.`
-        );
-      }
 
       return true;
     }

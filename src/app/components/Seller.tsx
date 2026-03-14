@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router';
 import { Upload, Image as ImageIcon, Package } from 'lucide-react';
 import { ProductStorage } from '../../utils/productStorage';
 import { sendEmail } from '../../utils/emailService';
-import { sendWhatsApp } from '../../utils/whatsappService';
 
 export const Seller = () => {
   const { user } = useAuth();

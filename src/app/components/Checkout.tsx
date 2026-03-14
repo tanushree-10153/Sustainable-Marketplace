@@ -4,7 +4,6 @@ import { useAuth } from '../context/AuthContext';
 import { CreditCard, CheckCircle, AlertCircle } from 'lucide-react';
 import { ProductStorage } from '../../utils/productStorage';
 import { sendEmail } from '../../utils/emailService';
-import { sendWhatsApp } from '../../utils/whatsappService';
 
 interface Product {
   id: number;
@@ -87,13 +86,6 @@ export const Checkout = () => {
           subject: 'Order Confirmed',
           message: `Hi ${user.name}, your order for "${product.productName}" has been confirmed. You paid ₹${product.price} via ${paymentMethod === 'card' ? 'Credit/Debit Card' : 'UPI'}. Thank you for your purchase!`,
         });
-
-        if (user.whatsapp) {
-          sendWhatsApp(
-            user.whatsapp,
-            `✅ Hi ${user.name}! Your order for *"${product.productName}"* is confirmed.\n💰 Amount: ₹${product.price}\n💳 Payment: ${paymentMethod === 'card' ? 'Credit/Debit Card' : 'UPI'}\n\nThank you for shopping on UPCYCLE! 🌱`
-          );
-        }
 
         setProcessing(false);
         setSuccess(true);
