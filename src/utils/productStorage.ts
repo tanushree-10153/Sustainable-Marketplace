@@ -1,5 +1,5 @@
 const JSONBIN_BIN_ID = '69b5b8feb7ec241ddc6b2a9d';
-const JSONBIN_API_KEY = '$2a$10$tIUS7NyS.wbotnCjR01Hx.K7jE/tSDOGRszMTLyVFHaMUCQKVq/OS';
+const JSONBIN_API_KEY = '$2a$10$UbEjsZRD45In5eY.rr0umuUOFBJOS34UGwK006UJDImW1Y7m4.Eim';
 const BASE_URL = `https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`;
 
 const headers = {
@@ -8,30 +8,37 @@ const headers = {
 };
 
 export const ProductStorage = {
-  // Load products from JSONBin (primary) with localStorage fallback
   loadProducts: async (): Promise<any[]> => {
     try {
       const res = await fetch(`${BASE_URL}/latest`, { headers });
+      if (!res.ok) throw new Error('JSONBin fetch failed');
       const data = await res.json();
-      const products = data.record?.products || [];
-      // Cache locally
-      localStorage.setItem('products', JSON.stringify(products));
-      return products;
+      const products = data?.record?.products;
+      // Ensure we always return an array
+      const result = Array.isArray(products) ? products : [];
+      localStorage.setItem('products', JSON.stringify(result));
+      return result;
     } catch {
-      // Fallback to localStorage if offline
-      return JSON.parse(localStorage.getItem('products') || '[]');
+      // Fallback to localStorage
+      try {
+        const local = JSON.parse(localStorage.getItem('products') || '[]');
+        return Array.isArray(local) ? local : [];
+      } catch {
+        return [];
+      }
     }
   },
 
-  // Save products to JSONBin (primary) + localStorage cache
   saveProducts: async (products: any[]): Promise<boolean> => {
     try {
-      await fetch(BASE_URL, {
+      const safeProducts = Array.isArray(products) ? products : [];
+      const res = await fetch(BASE_URL, {
         method: 'PUT',
         headers,
-        body: JSON.stringify({ products }),
+        body: JSON.stringify({ products: safeProducts }),
       });
-      localStorage.setItem('products', JSON.stringify(products));
+      if (!res.ok) throw new Error('JSONBin save failed');
+      localStorage.setItem('products', JSON.stringify(safeProducts));
       return true;
     } catch {
       return false;
