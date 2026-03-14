@@ -21,13 +21,14 @@ export const ProductDetails = () => {
   const [product, setProduct] = useState<Product | null>(null);
 
   useEffect(() => {
-    const products = ProductStorage.loadProducts();
-    const foundProduct = products.find((p: Product) => p.id === Number(id));
-    if (foundProduct) {
-      setProduct(foundProduct);
-    } else {
-      navigate('/buyer');
-    }
+    ProductStorage.loadProducts().then((products) => {
+      const foundProduct = products.find((p: Product) => p.id === Number(id));
+      if (foundProduct) {
+        setProduct(foundProduct);
+      } else {
+        navigate('/buyer');
+      }
+    });
   }, [id, navigate]);
 
   if (!product) {

@@ -29,7 +29,7 @@ export const Seller = () => {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!sellerName || !sellerEmail || !materialType || !productName || !description || !price || !imageFile) {
@@ -38,7 +38,7 @@ export const Seller = () => {
     }
 
     try {
-      const products = ProductStorage.loadProducts();
+      const products = await ProductStorage.loadProducts();
       const newProduct = {
         id: Date.now(),
         sellerName,
@@ -52,15 +52,14 @@ export const Seller = () => {
       };
 
       products.push(newProduct);
-      const saveSuccess = ProductStorage.saveProducts(products);
+      const saveSuccess = await ProductStorage.saveProducts(products);
 
       if (!saveSuccess) {
         alert('Error saving product. Please try again.');
         return;
       }
 
-      // Verify the product was saved
-      const savedProducts = ProductStorage.loadProducts();
+      const savedProducts = await ProductStorage.loadProducts();
       const productExists = savedProducts.some((p: any) => p.id === newProduct.id);
 
       if (!productExists) {

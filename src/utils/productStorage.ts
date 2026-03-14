@@ -1,67 +1,50 @@
 const JSONBIN_BIN_ID = '69b5b8feb7ec241ddc6b2a9d';
 const JSONBIN_API_KEY = '$2a$10$tIUS7NyS.wbotnCjR01Hx.K7jE/tSDOGRszMTLyVFHaMUCQKVq/OS';
+const BASE_URL = `https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`;
 
-const syncToJSONBin = async (products: any[]) => {
-  try {
-    await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Master-Key': JSONBIN_API_KEY,
-      },
-      body: JSON.stringify({ products }),
-    });
-  } catch (error) {
-    console.error('JSONBin sync error:', error);
-  }
+const headers = {
+  'Content-Type': 'application/json',
+  'X-Master-Key': JSONBIN_API_KEY,
 };
 
 export const ProductStorage = {
-  saveProducts: (products: any[]) => {
+  // Load products from JSONBin (primary) with localStorage fallback
+  loadProducts: async (): Promise<any[]> => {
     try {
+      const res = await fetch(`${BASE_URL}/latest`, { headers });
+      const data = await res.json();
+      const products = data.record?.products || [];
+      // Cache locally
       localStorage.setItem('products', JSON.stringify(products));
-      localStorage.setItem('products_backup', JSON.stringify({
-        products,
-        lastUpdated: new Date().toISOString(),
-        version: '1.0',
-      }));
-      // Sync to JSONBin for WhatsApp bot
-      syncToJSONBin(products);
+      return products;
+    } catch {
+      // Fallback to localStorage if offline
+      return JSON.parse(localStorage.getItem('products') || '[]');
+    }
+  },
+
+  // Save products to JSONBin (primary) + localStorage cache
+  saveProducts: async (products: any[]): Promise<boolean> => {
+    try {
+      await fetch(BASE_URL, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify({ products }),
+      });
+      localStorage.setItem('products', JSON.stringify(products));
       return true;
-    } catch (error) {
-      console.error('Error saving products:', error);
+    } catch {
       return false;
     }
   },
 
-  loadProducts: () => {
-    try {
-      let products = JSON.parse(localStorage.getItem('products') || '[]');
-      if (products.length === 0) {
-        const backupData = JSON.parse(localStorage.getItem('products_backup') || '{}');
-        if (backupData.products && Array.isArray(backupData.products)) {
-          products = backupData.products;
-        }
-      }
-      return products;
-    } catch (error) {
-      console.error('Error loading products:', error);
-      return [];
-    }
-  },
-
-  clearAllProducts: () => {
+  clearAllProducts: async () => {
+    await ProductStorage.saveProducts([]);
     localStorage.removeItem('products');
-    localStorage.removeItem('products_backup');
   },
 
-  getStorageInfo: () => {
-    const products = ProductStorage.loadProducts();
-    const backupData = JSON.parse(localStorage.getItem('products_backup') || '{}');
-    return {
-      totalProducts: products.length,
-      lastBackup: backupData.lastUpdated || null,
-      storageUsed: JSON.stringify(products).length,
-    };
+  getStorageInfo: async () => {
+    const products = await ProductStorage.loadProducts();
+    return { totalProducts: products.length };
   },
 };

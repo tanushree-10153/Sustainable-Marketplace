@@ -52,9 +52,10 @@ export const WhatsAppButton = () => {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const p = ProductStorage.loadProducts();
-    setProducts(p);
-    setProductCount(p.length);
+    ProductStorage.loadProducts().then((p) => {
+      setProducts(p);
+      setProductCount(p.length);
+    });
   }, []);
 
   useEffect(() => {

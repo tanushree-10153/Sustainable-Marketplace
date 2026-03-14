@@ -31,19 +31,21 @@ export const Checkout = () => {
   const [success, setSuccess] = useState(false);
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      alert('Please login to make a purchase');
-      navigate('/login');
-      return;
-    }
-
-    const products = ProductStorage.loadProducts();
-    const foundProduct = products.find((p: Product) => p.id === Number(id));
-    if (foundProduct) {
-      setProduct(foundProduct);
-    } else {
-      navigate('/buyer');
-    }
+    const load = async () => {
+      if (!isAuthenticated) {
+        alert('Please login to make a purchase');
+        navigate('/login');
+        return;
+      }
+      const products = await ProductStorage.loadProducts();
+      const foundProduct = products.find((p: Product) => p.id === Number(id));
+      if (foundProduct) {
+        setProduct(foundProduct);
+      } else {
+        navigate('/buyer');
+      }
+    };
+    load();
   }, [id, navigate, isAuthenticated]);
 
   const handlePayment = (e: React.FormEvent) => {

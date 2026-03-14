@@ -22,8 +22,7 @@ export const Buyer = () => {
   const [filterMaterial, setFilterMaterial] = useState('');
 
   useEffect(() => {
-    const storedProducts = ProductStorage.loadProducts();
-    setProducts(storedProducts);
+    ProductStorage.loadProducts().then(setProducts);
   }, []);
 
   const filteredProducts = products.filter((product) => {
