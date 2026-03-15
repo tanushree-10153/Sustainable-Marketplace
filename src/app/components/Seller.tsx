@@ -17,7 +17,8 @@ const uploadToCloudinary = async (file: File): Promise<string> => {
     body: formData,
   });
   const data = await res.json();
-  if (!data.secure_url) throw new Error('Cloudinary upload failed');
+  console.log('Cloudinary response:', data);
+  if (!data.secure_url) throw new Error(data.error?.message || 'Cloudinary upload failed');
   return data.secure_url;
 };
 
