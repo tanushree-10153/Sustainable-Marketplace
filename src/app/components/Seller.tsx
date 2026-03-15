@@ -59,14 +59,6 @@ export const Seller = () => {
         return;
       }
 
-      const savedProducts = await ProductStorage.loadProducts();
-      const productExists = savedProducts.some((p: any) => p.id === newProduct.id);
-
-      if (!productExists) {
-        alert('Error saving product. Please try again.');
-        return;
-      }
-
       sendEmail({
         user_name: sellerName,
         user_email: sellerEmail,
@@ -74,16 +66,8 @@ export const Seller = () => {
         message: `Hi ${sellerName}, your product "${productName}" has been listed on the marketplace for ₹${price}. It is now visible to buyers.`,
       });
 
-      if (user?.whatsapp) {
-        sendWhatsApp(
-          user.whatsapp,
-          `🛍️ Hi ${sellerName}! Your product *"${productName}"* has been listed on UPCYCLE for ₹${price}. Buyers can now find it at https://sustainable-fashion-marketplace.netlify.app/buyer`
-        );
-      }
+      alert(`Product "${productName}" uploaded successfully!`);
 
-      alert(`Product uploaded successfully! Total products in marketplace: ${savedProducts.length}`);
-
-      // Reset form
       setMaterialType('');
       setProductName('');
       setDescription('');
@@ -91,7 +75,6 @@ export const Seller = () => {
       setImageFile(null);
       setImagePreview('');
 
-      // Redirect to buyer page to see the product
       setTimeout(() => navigate('/buyer'), 1000);
     } catch (error) {
       console.error('Error saving product:', error);
