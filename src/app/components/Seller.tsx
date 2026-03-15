@@ -5,6 +5,22 @@ import { Upload, Image as ImageIcon, Package } from 'lucide-react';
 import { ProductStorage } from '../../utils/productStorage';
 import { sendEmail } from '../../utils/emailService';
 
+const CLOUDINARY_CLOUD = 'dxxjpirtn';
+const CLOUDINARY_PRESET = 'upcycle_products';
+
+const uploadToCloudinary = async (file: File): Promise<string> => {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('upload_preset', CLOUDINARY_PRESET);
+  const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`, {
+    method: 'POST',
+    body: formData,
+  });
+  const data = await res.json();
+  if (!data.secure_url) throw new Error('Cloudinary upload failed');
+  return data.secure_url;
+};
+
 export const Seller = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -16,6 +32,7 @@ export const Seller = () => {
   const [price, setPrice] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState('');
+  const [uploading, setUploading] = useState(false);
 
   const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -38,6 +55,11 @@ export const Seller = () => {
     }
 
     try {
+      setUploading(true);
+
+      // Upload image to Cloudinary
+      const imageUrl = await uploadToCloudinary(imageFile);
+
       const products = await ProductStorage.loadProducts();
       const newProduct = {
         id: Date.now(),
@@ -46,13 +68,14 @@ export const Seller = () => {
         materialType,
         productName,
         description,
-        imageUrl: imagePreview,
+        imageUrl,
         price: parseFloat(price),
         uploadDate: new Date().toISOString(),
       };
 
       products.push(newProduct);
       const saveSuccess = await ProductStorage.saveProducts(products);
+      setUploading(false);
 
       if (!saveSuccess) {
         alert('Error saving product. Please try again.');
@@ -77,6 +100,7 @@ export const Seller = () => {
 
       setTimeout(() => navigate('/buyer'), 1000);
     } catch (error) {
+      setUploading(false);
       console.error('Error saving product:', error);
       alert('Error saving product. Please try again.');
     }
@@ -240,10 +264,11 @@ export const Seller = () => {
 
             <button
               type="submit"
-              className="w-full bg-black text-white py-4 rounded-lg font-semibold hover:bg-gray-800 transition-colors flex items-center justify-center gap-2"
+              disabled={uploading}
+              className="w-full bg-black text-white py-4 rounded-lg font-semibold hover:bg-gray-800 transition-colors flex items-center justify-center gap-2 disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
               <Upload className="w-5 h-5" />
-              Upload Product
+              {uploading ? 'Uploading...' : 'Upload Product'}
             </button>
           </form>
         </div>

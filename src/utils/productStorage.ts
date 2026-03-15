@@ -7,18 +7,6 @@ const headers = {
   'X-Master-Key': JSONBIN_API_KEY,
 };
 
-// Images are stored in localStorage separately (base64 can be large)
-const saveImage = (id: number, imageUrl: string) => {
-  try {
-    localStorage.setItem(`product_image_${id}`, imageUrl);
-  } catch {}
-};
-
-const loadImage = (id: number): string => {
-  return localStorage.getItem(`product_image_${id}`) || '';
-};
-
-// Strip imageUrl before saving to JSONBin, restore when loading
 export const ProductStorage = {
   loadProducts: async (): Promise<any[]> => {
     try {
@@ -26,19 +14,11 @@ export const ProductStorage = {
       if (!res.ok) throw new Error('JSONBin fetch failed');
       const data = await res.json();
       const products = data?.record?.products;
-      const result = Array.isArray(products) ? products : [];
-      // Restore images from localStorage
-      const withImages = result.map((p: any) => ({
-        ...p,
-        imageUrl: loadImage(p.id) || p.imageUrl || '',
-      }));
-      return withImages;
+      return Array.isArray(products) ? products : [];
     } catch {
       try {
-        const local = JSON.parse(localStorage.getItem('products_meta') || '[]');
-        return Array.isArray(local)
-          ? local.map((p: any) => ({ ...p, imageUrl: loadImage(p.id) || '' }))
-          : [];
+        const local = JSON.parse(localStorage.getItem('products') || '[]');
+        return Array.isArray(local) ? local : [];
       } catch {
         return [];
       }
@@ -48,21 +28,13 @@ export const ProductStorage = {
   saveProducts: async (products: any[]): Promise<boolean> => {
     try {
       const safe = Array.isArray(products) ? products : [];
-      // Save images to localStorage, strip from JSONBin payload
-      const metaOnly = safe.map((p: any) => {
-        if (p.imageUrl) saveImage(p.id, p.imageUrl);
-        const { imageUrl, ...meta } = p;
-        return meta;
-      });
-
       const res = await fetch(BASE_URL, {
         method: 'PUT',
         headers,
-        body: JSON.stringify({ products: metaOnly }),
+        body: JSON.stringify({ products: safe }),
       });
-
       if (!res.ok) throw new Error('JSONBin save failed');
-      localStorage.setItem('products_meta', JSON.stringify(metaOnly));
+      localStorage.setItem('products', JSON.stringify(safe));
       return true;
     } catch (err) {
       console.error('saveProducts error:', err);
@@ -72,7 +44,7 @@ export const ProductStorage = {
 
   clearAllProducts: async () => {
     await ProductStorage.saveProducts([]);
-    localStorage.removeItem('products_meta');
+    localStorage.removeItem('products');
   },
 
   getStorageInfo: async () => {
