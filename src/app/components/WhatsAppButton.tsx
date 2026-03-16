@@ -1,108 +1,185 @@
-import { useEffect, useState, useRef } from 'react';
-import { ProductStorage } from '../../utils/productStorage';
+﻿import { useEffect, useState, useRef } from "react";
+import { ProductStorage } from "../../utils/productStorage";
+import { useAuth } from "../context/AuthContext";
+import { VendorChatStorage } from "../../utils/vendorChatStorage";
 
-const WHATSAPP_ICON = (
+const CHATBOT_ICON = (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
-    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+    <path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7H4a7 7 0 0 1 7-7h1V5.73A2 2 0 0 1 10 4a2 2 0 0 1 2-2M7.5 14a1.5 1.5 0 0 0-1.5 1.5A1.5 1.5 0 0 0 7.5 17 1.5 1.5 0 0 0 9 15.5 1.5 1.5 0 0 0 7.5 14m9 0a1.5 1.5 0 0 0-1.5 1.5 1.5 1.5 0 0 0 1.5 1.5 1.5 1.5 0 0 0 1.5-1.5A1.5 1.5 0 0 0 16.5 14M4 21v-2a3 3 0 0 1 3-3h10a3 3 0 0 1 3 3v2H4z"/>
   </svg>
 );
 
-interface Message {
-  from: 'bot' | 'user';
-  text: string;
-}
+interface Message { from: "bot" | "user"; text: string; }
+type AuthView = "gate" | "login" | "register";
+type BotState = "menu" | "browsing" | "after_add" | "cart_view" | "awaiting_address" | "done";
 
-const getBotReply = (input: string, productCount: number, products: any[]): string => {
-  const msg = input.toLowerCase().trim();
-
-  if (msg.includes('hi') || msg.includes('hello') || msg.includes('hey')) {
-    return `👋 Hello! Welcome to *UPCYCLE* Vendor Support.\n\nI can help you with:\n1️⃣ Product count\n2️⃣ Recent listings\n3️⃣ How to sell\n4️⃣ Contact support\n\nType a number or ask me anything!`;
-  }
-  if (msg === '1' || msg.includes('how many') || msg.includes('product count') || msg.includes('total')) {
-    return `📦 There are currently *${productCount} products* listed on UPCYCLE marketplace.`;
-  }
-  if (msg === '2' || msg.includes('recent') || msg.includes('latest') || msg.includes('new product')) {
-    if (products.length === 0) return `😔 No products listed yet. Be the first to sell!`;
-    const recent = products.slice(-3).reverse();
-    let reply = `🆕 *Recent Listings:*\n\n`;
-    recent.forEach((p: any) => {
-      reply += `• *${p.productName}* — ₹${p.price}\n  ${p.materialType} by ${p.sellerName}\n\n`;
-    });
-    return reply.trim();
-  }
-  if (msg === '3' || msg.includes('how to sell') || msg.includes('sell') || msg.includes('list product')) {
-    return `🛍️ *How to sell on UPCYCLE:*\n\n1. Register/Login on the site\n2. Go to the Sell page\n3. Fill in product details & upload image\n4. Submit — your product goes live instantly!\n\n🌐 Visit: https://sustainable-fashion-marketplace.netlify.app/seller`;
-  }
-  if (msg === '4' || msg.includes('contact') || msg.includes('support') || msg.includes('help')) {
-    return `📞 *Contact Support:*\n\nEmail: support@upcycle.com\nPhone: +91 89280 99523\n\nWe're available Mon–Sat, 9am–6pm.`;
-  }
-  if (msg.includes('price') || msg.includes('cost')) {
-    return `💰 Product prices vary by seller. Browse all listings at:\nhttps://sustainable-fashion-marketplace.netlify.app/buyer`;
-  }
-
-  return `🤖 I didn't quite get that. Try asking:\n\n• "How many products are listed?"\n• "Show recent listings"\n• "How to sell?"\n• "Contact support"`;
-};
+const MAIN_MENU = "👋 Welcome to *UPCYCLE Vendor Bot*!\n\nChoose an option:\n\n1️⃣  Browse & Buy Products\n2️⃣  View My Cart\n3️⃣  My Order History\n\nReply with a number.";
 
 export const WhatsAppButton = () => {
+  const { isAuthenticated, login, register, user } = useAuth();
+  const email = (user as any)?.email || "";
+
   const [open, setOpen] = useState(false);
+  const [authView, setAuthView] = useState<AuthView>("gate");
   const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState('');
-  const [productCount, setProductCount] = useState(0);
+  const [input, setInput] = useState("");
   const [products, setProducts] = useState<any[]>([]);
+  const [botState, setBotState] = useState<BotState>("menu");
+  const [listedProducts, setListedProducts] = useState<any[]>([]);
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    ProductStorage.loadProducts().then((p) => {
-      setProducts(p);
-      setProductCount(p.length);
-    });
-  }, []);
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [loginError, setLoginError] = useState("");
+  const [regName, setRegName] = useState("");
+  const [regEmail, setRegEmail] = useState("");
+  const [regPassword, setRegPassword] = useState("");
+  const [regWhatsapp, setRegWhatsapp] = useState("");
+  const [regError, setRegError] = useState("");
+
+  useEffect(() => { ProductStorage.loadProducts().then(setProducts); }, []);
 
   useEffect(() => {
-    if (open && messages.length === 0) {
-      setMessages([{
-        from: 'bot',
-        text: `👋 Hello! Welcome to *UPCYCLE* Vendor Support.\n\nI can help you with:\n1️⃣ Product count\n2️⃣ Recent listings\n3️⃣ How to sell\n4️⃣ Contact support\n\nType a number or ask me anything!`,
-      }]);
-    }
-  }, [open]);
+    if (open && isAuthenticated && messages.length === 0) pushBot(MAIN_MENU);
+  }, [open, isAuthenticated]);
 
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
+
+  const pushBot = (text: string) => setMessages(prev => [...prev, { from: "bot", text }]);
+
+  const goMenu = () => { setBotState("menu"); setListedProducts([]); pushBot(MAIN_MENU); };
+
+  const showProductList = () => {
+    if (!products.length) { pushBot("😔 No products listed yet.\n\nReply *0* for main menu."); return; }
+    const list = products.map((p, i) => `${i + 1}. *${p.productName}* — ₹${p.price}\n    🧵 ${p.materialType}`).join("\n\n");
+    setListedProducts(products);
+    setBotState("browsing");
+    pushBot(`🛍️ *Available Products (${products.length}):*\n\n${list}\n\nReply with a *number* to add to cart.\nReply *0* to go back.`);
+  };
+
+  const showCart = () => {
+    const cart = VendorChatStorage.getCart(email);
+    if (!cart.length) { pushBot("🛒 Your cart is empty.\n\nReply *1* to browse or *0* for main menu."); setBotState("menu"); return; }
+    const total = cart.reduce((s, i) => s + i.price * i.quantity, 0);
+    const lines = cart.map((item, idx) => `${idx + 1}. *${item.productName}* x${item.quantity} — ₹${item.price * item.quantity}`).join("\n");
+    setBotState("cart_view");
+    pushBot(`🛒 *Your Cart:*\n\n${lines}\n\n💰 *Total: ₹${total}*\n\n1️⃣  Proceed to Checkout\n2️⃣  Clear Cart\n0️⃣  Main Menu`);
+  };
+
+  const showOrderHistory = () => {
+    const orders = VendorChatStorage.getOrders(email);
+    if (!orders.length) { pushBot("📦 No orders yet.\n\nReply *0* for main menu."); return; }
+    const spent = VendorChatStorage.getTotalSpent(email);
+    const lines = orders.map(o => `🧾 *${o.orderId}*\n   ₹${o.total} | ${new Date(o.placedAt).toLocaleDateString()}\n   ${o.items.length} item(s)`).join("\n\n");
+    pushBot(`📦 *Your Orders:*\n\n${lines}\n\n💸 Total spent: *₹${spent}*\n\nReply *0* for main menu.`);
+  };
+
+  const processPayment = (address: string) => {
+    pushBot("⏳ *Payment Processing...*\n\nPlease wait...");
+    setTimeout(() => {
+      const order = VendorChatStorage.placeOrder(email, address);
+      if (order) {
+        setBotState("done");
+        pushBot(`✅ *Order Confirmed!*\n\n🧾 Order ID: *${order.orderId}*\n💳 Transaction ID: *${order.transactionId}*\n📍 Deliver to: ${order.deliveryAddress}\n💰 Total Paid: ₹${order.total}\n\nThank you for shopping on UPCYCLE! 🌿\n\nReply *0* for main menu.`);
+      } else {
+        pushBot("❌ Something went wrong. Please try again.\n\nReply *0* for main menu.");
+        setBotState("menu");
+      }
+    }, 2000);
+  };
 
   const handleSend = () => {
     if (!input.trim()) return;
-    const userMsg = input.trim();
-    setInput('');
-    setMessages(prev => [...prev, { from: 'user', text: userMsg }]);
+    const raw = input.trim();
+    const msg = raw.toLowerCase().trim();
+    setInput("");
+    setMessages(prev => [...prev, { from: "user", text: raw }]);
+    VendorChatStorage.log(email, "message", { text: raw });
 
     setTimeout(() => {
-      const reply = getBotReply(userMsg, productCount, products);
-      setMessages(prev => [...prev, { from: 'bot', text: reply }]);
-    }, 600);
+      if (msg === "0" || msg === "menu" || msg === "back") { goMenu(); return; }
+      switch (botState) {
+        case "menu":
+        case "done":
+          if (msg === "1") showProductList();
+          else if (msg === "2") showCart();
+          else if (msg === "3") showOrderHistory();
+          else pushBot("Please reply *1*, *2*, or *3*.");
+          break;
+        case "browsing": {
+          const idx = parseInt(msg) - 1;
+          if (!isNaN(idx) && idx >= 0 && idx < listedProducts.length) {
+            const p = listedProducts[idx];
+            VendorChatStorage.addToCart(email, { productId: p.id || p.productName, productName: p.productName, price: p.price, quantity: 1, materialType: p.materialType });
+            VendorChatStorage.log(email, "product_view", { productName: p.productName });
+            setBotState("after_add");
+            pushBot(`✅ *${p.productName}* added to cart!\n💰 ₹${p.price} | 🧵 ${p.materialType}\n\nWhat next?\n\n1️⃣  Add more products\n2️⃣  View cart & checkout\n0️⃣  Main menu`);
+          } else {
+            pushBot(`⚠️ Please reply with a number between 1 and ${listedProducts.length}.`);
+          }
+          break;
+        }
+        case "after_add":
+          if (msg === "1") showProductList();
+          else if (msg === "2") showCart();
+          else pushBot("Reply *1* to add more, *2* to view cart, or *0* for main menu.");
+          break;
+        case "cart_view":
+          if (msg === "1") {
+            const cart = VendorChatStorage.getCart(email);
+            if (!cart.length) { pushBot("🛒 Cart is empty."); goMenu(); return; }
+            const total = cart.reduce((s, i) => s + i.price * i.quantity, 0);
+            const summary = cart.map(i => `• ${i.productName} x${i.quantity} — ₹${i.price * i.quantity}`).join("\n");
+            setBotState("awaiting_address");
+            pushBot(`📋 *Order Summary:*\n\n${summary}\n\n💰 *Total: ₹${total}*\n\n📍 Please type your *delivery address*:`);
+          } else if (msg === "2") {
+            VendorChatStorage.clearCart(email);
+            pushBot("🗑️ Cart cleared.\n\nReply *0* for main menu.");
+            setBotState("menu");
+          } else {
+            pushBot("Reply *1* to checkout, *2* to clear cart, or *0* for main menu.");
+          }
+          break;
+        case "awaiting_address":
+          pushBot(`📍 Address noted: *${raw}*`);
+          processPayment(raw);
+          break;
+      }
+    }, 400);
+  };
+
+  const handleLogin = () => {
+    setLoginError("");
+    if (!login(loginEmail, loginPassword)) { setLoginError("Invalid email or password."); return; }
+    setLoginEmail(""); setLoginPassword("");
+  };
+
+  const handleRegister = () => {
+    setRegError("");
+    if (!regName || !regEmail || !regPassword || !regWhatsapp) { setRegError("All fields are required."); return; }
+    if (!register(regName, regEmail, regPassword, regWhatsapp)) { setRegError("Email already registered."); return; }
+    setRegName(""); setRegEmail(""); setRegPassword(""); setRegWhatsapp("");
+    setAuthView("login");
   };
 
   const formatText = (text: string) =>
-    text.split('\n').map((line, i) => (
+    text.split("\n").map((line, i) => (
       <span key={i}>
-        {line.replace(/\*(.*?)\*/g, '$1').split(/\*([^*]+)\*/).map((part, j) =>
-          j % 2 === 1 ? <strong key={j}>{part}</strong> : part
-        )}
+        {line.split(/\*([^*]+)\*/).map((part, j) => j % 2 === 1 ? <strong key={j}>{part}</strong> : part)}
         <br />
       </span>
     ));
 
+  const ic = "w-full text-sm border border-gray-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-green-400";
+  const bp = "w-full bg-green-500 hover:bg-green-600 text-white text-sm font-semibold py-2 rounded-lg transition-colors";
+  const bs = "w-full border border-green-500 text-green-600 hover:bg-green-50 text-sm font-semibold py-2 rounded-lg transition-colors";
+
   return (
     <>
-      {/* Chat Window */}
       {open && (
         <div className="fixed bottom-24 right-6 z-50 w-80 bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-gray-200">
-          {/* Header */}
           <div className="bg-green-500 px-4 py-3 flex items-center gap-3">
-            <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-green-500">
-              {WHATSAPP_ICON}
-            </div>
+            <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-green-500">{CHATBOT_ICON}</div>
             <div>
               <p className="text-white font-semibold text-sm">UPCYCLE Vendor Bot</p>
               <p className="text-green-100 text-xs">🟢 Online</p>
@@ -110,51 +187,68 @@ export const WhatsAppButton = () => {
             <button onClick={() => setOpen(false)} className="ml-auto text-white text-xl leading-none">&times;</button>
           </div>
 
-          {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-3 space-y-2 bg-[#ece5dd]" style={{ maxHeight: '320px' }}>
-            {messages.map((msg, i) => (
-              <div key={i} className={`flex ${msg.from === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[85%] px-3 py-2 rounded-xl text-sm shadow-sm ${
-                  msg.from === 'user'
-                    ? 'bg-green-100 text-gray-800 rounded-br-none'
-                    : 'bg-white text-gray-800 rounded-bl-none'
-                }`}>
-                  {formatText(msg.text)}
-                </div>
-              </div>
-            ))}
-            <div ref={bottomRef} />
-          </div>
+          {!isAuthenticated && authView === "gate" && (
+            <div className="p-5 flex flex-col gap-3 text-center">
+              <div className="text-4xl">🤖</div>
+              <p className="text-gray-700 text-sm font-medium">Login or register to use Vendor Chat</p>
+              <button className={bp} onClick={() => setAuthView("login")}>Login</button>
+              <button className={bs} onClick={() => setAuthView("register")}>Register</button>
+            </div>
+          )}
 
-          {/* Input */}
-          <div className="flex items-center gap-2 p-3 border-t bg-white">
-            <input
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-              placeholder="Type a message..."
-              className="flex-1 text-sm border border-gray-300 rounded-full px-4 py-2 outline-none focus:ring-2 focus:ring-green-400"
-            />
-            <button
-              onClick={handleSend}
-              className="bg-green-500 hover:bg-green-600 text-white rounded-full w-9 h-9 flex items-center justify-center"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
-                <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
-              </svg>
-            </button>
-          </div>
+          {!isAuthenticated && authView === "login" && (
+            <div className="p-5 flex flex-col gap-3">
+              <p className="text-gray-800 text-sm font-semibold text-center">Login to continue</p>
+              <input className={ic} type="email" placeholder="Email" value={loginEmail} onChange={e => setLoginEmail(e.target.value)} />
+              <input className={ic} type="password" placeholder="Password" value={loginPassword} onChange={e => setLoginPassword(e.target.value)} onKeyDown={e => e.key === "Enter" && handleLogin()} />
+              {loginError && <p className="text-red-500 text-xs">{loginError}</p>}
+              <button className={bp} onClick={handleLogin}>Login</button>
+              <p className="text-xs text-center text-gray-500">No account? <button className="text-green-600 font-medium hover:underline" onClick={() => { setAuthView("register"); setLoginError(""); }}>Register</button></p>
+            </div>
+          )}
+
+          {!isAuthenticated && authView === "register" && (
+            <div className="p-5 flex flex-col gap-3">
+              <p className="text-gray-800 text-sm font-semibold text-center">Create an account</p>
+              <input className={ic} type="text" placeholder="Full Name" value={regName} onChange={e => setRegName(e.target.value)} />
+              <input className={ic} type="email" placeholder="Email" value={regEmail} onChange={e => setRegEmail(e.target.value)} />
+              <input className={ic} type="password" placeholder="Password" value={regPassword} onChange={e => setRegPassword(e.target.value)} />
+              <input className={ic} type="tel" placeholder="WhatsApp Number" value={regWhatsapp} onChange={e => setRegWhatsapp(e.target.value)} />
+              {regError && <p className="text-red-500 text-xs">{regError}</p>}
+              <button className={bp} onClick={handleRegister}>Register</button>
+              <p className="text-xs text-center text-gray-500">Already have an account? <button className="text-green-600 font-medium hover:underline" onClick={() => { setAuthView("login"); setRegError(""); }}>Login</button></p>
+            </div>
+          )}
+
+          {isAuthenticated && (
+            <>
+              <div className="flex-1 overflow-y-auto p-3 space-y-2 bg-[#ece5dd]" style={{ maxHeight: "340px" }}>
+                {messages.map((msg, i) => (
+                  <div key={i} className={`flex ${msg.from === "user" ? "justify-end" : "justify-start"}`}>
+                    <div className={`max-w-[85%] px-3 py-2 rounded-xl text-sm shadow-sm ${msg.from === "user" ? "bg-green-100 text-gray-800 rounded-br-none" : "bg-white text-gray-800 rounded-bl-none"}`}>
+                      {formatText(msg.text)}
+                    </div>
+                  </div>
+                ))}
+                <div ref={bottomRef} />
+              </div>
+              <div className="flex items-center gap-2 p-3 border-t bg-white">
+                <input type="text" value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === "Enter" && handleSend()}
+                  placeholder={botState === "awaiting_address" ? "Enter delivery address..." : "Type a number..."}
+                  className="flex-1 text-sm border border-gray-300 rounded-full px-4 py-2 outline-none focus:ring-2 focus:ring-green-400" />
+                <button onClick={handleSend} className="bg-green-500 hover:bg-green-600 text-white rounded-full w-9 h-9 flex items-center justify-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                </button>
+              </div>
+            </>
+          )}
         </div>
       )}
 
-      {/* Floating Button */}
-      <button
-        onClick={() => setOpen(!open)}
+      <button onClick={() => { if (open) { setOpen(false); } else { setOpen(true); if (!isAuthenticated) setAuthView("gate"); } }}
         className="fixed bottom-6 right-6 z-50 flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white px-4 py-3 rounded-full shadow-lg transition-all hover:scale-105"
-        aria-label="Open Vendor Chat"
-      >
-        {WHATSAPP_ICON}
+        aria-label="Open Vendor Chat">
+        {CHATBOT_ICON}
         <span className="text-sm font-semibold">Vendor Chat</span>
       </button>
     </>
