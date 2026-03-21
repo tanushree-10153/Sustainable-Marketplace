@@ -13,7 +13,8 @@ interface Message { from: "bot" | "user"; text: string; }
 type AuthView = "gate" | "login" | "register";
 type BotState = "menu" | "browsing" | "after_add" | "cart_view" | "awaiting_address" | "done";
 
-const MAIN_MENU = "👋 Welcome to *UPCYCLE Vendor Bot*!\n\nChoose an option:\n\n1️⃣  Browse & Buy Products\n2️⃣  View My Cart\n3️⃣  My Order History\n\nReply with a number.";
+const getMainMenu = (count: number) =>
+  `👋 Welcome to *UPCYCLE Vendor Bot*!\n\n🛍️ *${count} product${count !== 1 ? 's' : ''}* currently available.\n\nChoose an option:\n\n1️⃣  Browse & Buy Products\n2️⃣  View My Cart\n3️⃣  My Order History\n\nReply with a number.`;
 
 export const WhatsAppButton = () => {
   const { isAuthenticated, login, register, user } = useAuth();
@@ -40,14 +41,14 @@ export const WhatsAppButton = () => {
   useEffect(() => { ProductStorage.loadProducts().then(setProducts); }, []);
 
   useEffect(() => {
-    if (open && isAuthenticated && messages.length === 0) pushBot(MAIN_MENU);
-  }, [open, isAuthenticated]);
+    if (open && isAuthenticated && messages.length === 0) pushBot(getMainMenu(products.length));
+  }, [open, isAuthenticated, products]);
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
 
   const pushBot = (text: string) => setMessages(prev => [...prev, { from: "bot", text }]);
 
-  const goMenu = () => { setBotState("menu"); setListedProducts([]); pushBot(MAIN_MENU); };
+  const goMenu = () => { setBotState("menu"); setListedProducts([]); pushBot(getMainMenu(products.length)); };
 
   const showProductList = () => {
     if (!products.length) { pushBot("😔 No products listed yet.\n\nReply *0* for main menu."); return; }

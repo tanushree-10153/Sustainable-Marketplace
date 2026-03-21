@@ -14,12 +14,17 @@ interface AuthContextType {
   register: (name: string, email: string, password: string, whatsapp: string) => boolean;
   logout: () => void;
   isAuthenticated: boolean;
+  isAdmin: boolean;
 }
+
+const ADMIN_EMAIL = 'tanushree09910@gmail.com';
+const ADMIN_PASSWORD = 'tanushree';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const isAdmin = user?.email === ADMIN_EMAIL;
 
   useEffect(() => {
     const storedUser = localStorage.getItem('currentUser');
@@ -43,6 +48,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const login = (email: string, password: string): boolean => {
+    // Admin login
+    if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+      const adminUser = { name: 'Admin', email: ADMIN_EMAIL, whatsapp: '', registrationDate: new Date().toISOString() };
+      setUser(adminUser);
+      localStorage.setItem('currentUser', JSON.stringify(adminUser));
+      return true;
+    }
+
     const users = JSON.parse(localStorage.getItem('users') || '[]');
     const foundUser = users.find((u: any) => u.email === email && u.password === password);
 
@@ -75,7 +88,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, isAuthenticated: !!user }}>
+    <AuthContext.Provider value={{ user, login, register, logout, isAuthenticated: !!user, isAdmin }}>
       {children}
     </AuthContext.Provider>
   );

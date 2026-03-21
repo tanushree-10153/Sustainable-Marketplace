@@ -12,6 +12,8 @@ import { Checkout } from "./components/Checkout";
 import { Layout } from "./components/Layout";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 
+import { Admin } from "./components/Admin";
+
 const protect = (Component: React.ComponentType) => () => (
   <ProtectedRoute><Component /></ProtectedRoute>
 );
@@ -30,6 +32,7 @@ export const router = createBrowserRouter([
       { path: "buyer", Component: Buyer },
       { path: "product/:id", Component: protect(ProductDetails) },
       { path: "checkout/:id", Component: protect(Checkout) },
+      { path: "admin", Component: protect(Admin) },
     ],
   },
 ]);

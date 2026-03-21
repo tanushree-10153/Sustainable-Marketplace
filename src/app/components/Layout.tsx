@@ -1,12 +1,14 @@
-import { Outlet, Link, useNavigate } from 'react-router';
+import { Outlet, Link, useNavigate, useLocation } from 'react-router';
 import { useAuth } from '../context/AuthContext';
 import { Menu, X, ShoppingBag } from 'lucide-react';
 import { useState } from 'react';
 import { WhatsAppButton } from './WhatsAppButton';
 
 export const Layout = () => {
-  const { user, logout, isAuthenticated } = useAuth();
+  const { user, logout, isAuthenticated, isAdmin } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const isBuyerPage = location.pathname === '/buyer';
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleLogout = () => {
@@ -37,6 +39,11 @@ export const Layout = () => {
                   Dashboard
                 </Link>
               )}
+              {isAdmin && (
+                <Link to="/admin" className="text-sm font-medium text-red-600 hover:text-red-800 transition-colors">
+                  Admin
+                </Link>
+              )}
               <Link to="/seller" className="text-sm font-medium text-gray-700 hover:text-black transition-colors">
                 Sell
               </Link>
@@ -48,12 +55,16 @@ export const Layout = () => {
               </Link>
               {!isAuthenticated ? (
                 <>
-                  <Link to="/login" className="text-sm font-medium text-gray-700 hover:text-black transition-colors">
-                    Login
-                  </Link>
-                  <Link to="/register" className="px-4 py-2 bg-black text-white text-sm font-medium rounded-full hover:bg-gray-800 transition-colors">
-                    Register
-                  </Link>
+                  {!isBuyerPage && (
+                    <>
+                      <Link to="/login" className="text-sm font-medium text-gray-700 hover:text-black transition-colors">
+                        Login
+                      </Link>
+                      <Link to="/register" className="px-4 py-2 bg-black text-white text-sm font-medium rounded-full hover:bg-gray-800 transition-colors">
+                        Register
+                      </Link>
+                    </>
+                  )}
                 </>
               ) : (
                 <button
@@ -93,6 +104,15 @@ export const Layout = () => {
                   Dashboard
                 </Link>
               )}
+              {isAdmin && (
+                <Link
+                  to="/admin"
+                  className="block py-2 text-sm font-medium text-red-600 hover:text-red-800 transition-colors"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Admin
+                </Link>
+              )}
               <Link
                 to="/seller"
                 className="block py-2 text-sm font-medium text-gray-700 hover:text-black transition-colors"
@@ -116,20 +136,24 @@ export const Layout = () => {
               </Link>
               {!isAuthenticated ? (
                 <>
-                  <Link
-                    to="/login"
-                    className="block py-2 text-sm font-medium text-gray-700 hover:text-black transition-colors"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    Login
-                  </Link>
-                  <Link
-                    to="/register"
-                    className="block py-2 text-sm font-medium text-gray-700 hover:text-black transition-colors"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    Register
-                  </Link>
+                  {!isBuyerPage && (
+                    <>
+                      <Link
+                        to="/login"
+                        className="block py-2 text-sm font-medium text-gray-700 hover:text-black transition-colors"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        Login
+                      </Link>
+                      <Link
+                        to="/register"
+                        className="block py-2 text-sm font-medium text-gray-700 hover:text-black transition-colors"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        Register
+                      </Link>
+                    </>
+                  )}
                 </>
               ) : (
                 <button
