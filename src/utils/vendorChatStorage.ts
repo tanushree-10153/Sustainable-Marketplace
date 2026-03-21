@@ -1,4 +1,5 @@
 // Vendor Chat Storage — persists all session data to localStorage
+import { AdminStorage } from './adminStorage';
 
 export interface CartItem {
   productId: string;
@@ -130,6 +131,26 @@ export const VendorChatStorage = {
     session.cart = [];
     session.events.push({ type: 'order_placed', timestamp: new Date().toISOString(), data: order });
     VendorChatStorage.save(session);
+
+    // Sync to admin store (fire and forget)
+    order.items.forEach(item => {
+      AdminStorage.saveOrder({
+        orderId: order.orderId,
+        transactionId: order.transactionId,
+        buyerName: email.split('@')[0],
+        buyerEmail: email,
+        productName: item.productName,
+        sellerName: '—',
+        sellerEmail: '—',
+        price: item.price,
+        quantity: item.quantity,
+        deliveryAddress: order.deliveryAddress,
+        paymentMethod: 'Chatbot Payment',
+        source: 'chatbot',
+        placedAt: order.placedAt,
+      });
+    });
+
     return order;
   },
 

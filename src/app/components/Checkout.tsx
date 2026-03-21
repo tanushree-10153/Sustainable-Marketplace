@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import { useAuth } from '../context/AuthContext';
-import { CheckCircle, Lock, ShieldCheck, Smartphone, CreditCard, Building2 } from 'lucide-react';
+import { CheckCircle, Lock, ShieldCheck, Smartphone, CreditCard, Building2, MapPin } from 'lucide-react';
 import { ProductStorage } from '../../utils/productStorage';
 import { sendEmail } from '../../utils/emailService';
+import { AdminStorage } from '../../utils/adminStorage';
 
 interface Product {
   id: number;
@@ -41,6 +42,7 @@ export const Checkout = () => {
   const [showCvv, setShowCvv] = useState(false);
   const [upiId, setUpiId] = useState('');
   const [selectedBank, setSelectedBank] = useState('');
+  const [deliveryAddress, setDeliveryAddress] = useState('');
   const [processing, setProcessing] = useState(false);
   const [success, setSuccess] = useState(false);
   const [orderId] = useState(`ORD${Date.now().toString().slice(-8)}`);
@@ -78,11 +80,16 @@ export const Checkout = () => {
       alert('Please select a bank');
       return;
     }
+    if (!deliveryAddress.trim()) {
+      alert('Please enter your delivery address');
+      return;
+    }
 
     setProcessing(true);
     setTimeout(() => {
       if (product && user) {
         const orders = JSON.parse(localStorage.getItem('orders') || '[]');
+        const methodLabel = paymentMethod === 'card' ? 'Credit/Debit Card' : paymentMethod === 'upi' ? 'UPI' : 'Net Banking';
         orders.push({
           id: Date.now(),
           orderId,
@@ -91,9 +98,25 @@ export const Checkout = () => {
           price: product.price,
           orderDate: new Date().toISOString(),
           paymentStatus: 'Completed',
-          paymentMethod: paymentMethod === 'card' ? 'Credit/Debit Card' : paymentMethod === 'upi' ? 'UPI' : 'Net Banking',
+          paymentMethod: methodLabel,
         });
         localStorage.setItem('orders', JSON.stringify(orders));
+        // Save to admin store
+        await AdminStorage.saveOrder({
+          orderId,
+          transactionId: `TXN-${Math.random().toString(36).substring(2, 10).toUpperCase()}`,
+          buyerName: user.name,
+          buyerEmail: user.email,
+          productName: product.productName,
+          sellerName: product.sellerName,
+          sellerEmail: product.sellerEmail,
+          price: product.price,
+          quantity: 1,
+          deliveryAddress,
+          paymentMethod: methodLabel,
+          source: 'website',
+          placedAt: new Date().toISOString(),
+        });
         sendEmail({
           user_name: user.name,
           user_email: user.email,
@@ -162,6 +185,21 @@ export const Checkout = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Payment Form */}
           <div className="lg:col-span-2 space-y-4">
+
+            {/* Delivery Address */}
+            <div className="bg-white rounded-2xl shadow-sm p-6">
+              <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4 flex items-center gap-2">
+                <MapPin className="w-4 h-4" /> Delivery Address
+              </h2>
+              <textarea
+                value={deliveryAddress}
+                onChange={e => setDeliveryAddress(e.target.value)}
+                rows={3}
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black outline-none resize-none text-sm"
+                placeholder="Enter your full delivery address (house no, street, city, pincode)..."
+                required
+              />
+            </div>
 
             {/* Payment Method Tabs */}
             <div className="bg-white rounded-2xl shadow-sm p-2 flex gap-2">

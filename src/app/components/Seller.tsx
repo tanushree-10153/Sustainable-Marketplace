@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router';
 import { Upload, Image as ImageIcon, Package } from 'lucide-react';
 import { ProductStorage } from '../../utils/productStorage';
 import { sendEmail } from '../../utils/emailService';
+import { AdminStorage } from '../../utils/adminStorage';
 
 const IMGBB_API_KEY = 'c7bd7831e49591fce2df2c4e639ab3ea';
 
@@ -79,6 +80,17 @@ export const Seller = () => {
         alert('Error saving product. Please try again.');
         return;
       }
+
+      // Save seller activity to admin store
+      await AdminStorage.saveSeller({
+        name: sellerName,
+        email: sellerEmail,
+        whatsapp: user?.whatsapp || '',
+        productName,
+        materialType,
+        price: parseFloat(price),
+        listedAt: new Date().toISOString(),
+      });
 
       sendEmail({
         user_name: sellerName,
