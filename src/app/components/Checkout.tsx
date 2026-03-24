@@ -123,11 +123,12 @@ export const Checkout = () => {
         setProcessing(false);
         setSuccess(true);
         setTimeout(() => navigate(user ? '/dashboard' : '/buyer'), 4000);
+
       }
     }, 2500);
   };
 
-  if (!product || !user) return null;
+  if (!product) return null;
 
   if (success) {
     return (
@@ -156,9 +157,9 @@ export const Checkout = () => {
               <span className="text-green-600 font-semibold">✓ Confirmed</span>
             </div>
           </div>
-          <p className="text-sm text-gray-400 mb-4">Redirecting to dashboard in a few seconds...</p>
-          <button onClick={() => navigate('/dashboard')} className="w-full bg-black text-white py-3 rounded-xl font-semibold hover:bg-gray-800 transition-colors">
-            Go to Dashboard
+          <p className="text-sm text-gray-400 mb-4">Redirecting in a few seconds...</p>
+          <button onClick={() => navigate(user ? '/dashboard' : '/buyer')} className="w-full bg-black text-white py-3 rounded-xl font-semibold hover:bg-gray-800 transition-colors">
+            {user ? 'Go to Dashboard' : 'Continue Shopping'}
           </button>
         </div>
       </div>
