@@ -32,7 +32,7 @@ const BANKS = ['State Bank of India', 'HDFC Bank', 'ICICI Bank', 'Axis Bank', 'K
 export const Checkout = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user, isAuthenticated } = useAuth();
+  const { user } = useAuth();
   const [product, setProduct] = useState<Product | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('card');
   const [cardNumber, setCardNumber] = useState('');
@@ -43,30 +43,28 @@ export const Checkout = () => {
   const [upiId, setUpiId] = useState('');
   const [selectedBank, setSelectedBank] = useState('');
   const [deliveryAddress, setDeliveryAddress] = useState('');
+  const [guestName, setGuestName] = useState('');
+  const [guestEmail, setGuestEmail] = useState('');
   const [processing, setProcessing] = useState(false);
   const [success, setSuccess] = useState(false);
   const [orderId] = useState(`ORD${Date.now().toString().slice(-8)}`);
 
   useEffect(() => {
     const load = async () => {
-      if (!isAuthenticated) {
-        navigate('/login');
-        return;
-      }
       const products = await ProductStorage.loadProducts();
       const foundProduct = products.find((p: Product) => p.id === Number(id));
       if (foundProduct) setProduct(foundProduct);
       else navigate('/buyer');
     };
     load();
-  }, [id, navigate, isAuthenticated]);
+  }, [id, navigate]);
 
   const formatCard = (val: string) => {
     const digits = val.replace(/\D/g, '').slice(0, 16);
     return digits.replace(/(.{4})/g, '$1 ').trim();
   };
 
-  const handlePayment = (e: React.FormEvent) => {
+  const handlePayment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (paymentMethod === 'card' && (!cardNumber || !expiryDate || !cvv || !cardName)) {
       alert('Please fill in all card details');
@@ -85,47 +83,46 @@ export const Checkout = () => {
       return;
     }
 
+    const buyerName = user?.name || guestName;
+    const buyerEmail = user?.email || guestEmail;
+
+    if (!buyerName || !buyerEmail) {
+      alert('Please enter your name and email');
+      return;
+    }
+
     setProcessing(true);
-    setTimeout(() => {
-      if (product && user) {
-        const orders = JSON.parse(localStorage.getItem('orders') || '[]');
+    setTimeout(async () => {
+      if (product) {
         const methodLabel = paymentMethod === 'card' ? 'Credit/Debit Card' : paymentMethod === 'upi' ? 'UPI' : 'Net Banking';
+        const orders = JSON.parse(localStorage.getItem('orders') || '[]');
         orders.push({
-          id: Date.now(),
-          orderId,
-          buyerEmail: user.email,
-          productName: product.productName,
-          price: product.price,
-          orderDate: new Date().toISOString(),
-          paymentStatus: 'Completed',
-          paymentMethod: methodLabel,
+          id: Date.now(), orderId, buyerEmail,
+          productName: product.productName, price: product.price,
+          orderDate: new Date().toISOString(), paymentStatus: 'Completed', paymentMethod: methodLabel,
         });
         localStorage.setItem('orders', JSON.stringify(orders));
-        // Save to admin store
         await AdminStorage.saveOrder({
           orderId,
           transactionId: `TXN-${Math.random().toString(36).substring(2, 10).toUpperCase()}`,
-          buyerName: user.name,
-          buyerEmail: user.email,
+          buyerName, buyerEmail,
           productName: product.productName,
           sellerName: product.sellerName,
           sellerEmail: product.sellerEmail,
-          price: product.price,
-          quantity: 1,
-          deliveryAddress,
-          paymentMethod: methodLabel,
-          source: 'website',
-          placedAt: new Date().toISOString(),
+          price: product.price, quantity: 1,
+          deliveryAddress, paymentMethod: methodLabel,
+          source: 'website', placedAt: new Date().toISOString(),
         });
-        sendEmail({
-          user_name: user.name,
-          user_email: user.email,
-          subject: 'Order Confirmed',
-          message: `Hi ${user.name}, your order for "${product.productName}" (${orderId}) has been confirmed. You paid ₹${product.price}. Thank you!`,
-        });
+        if (user) {
+          sendEmail({
+            user_name: buyerName, user_email: buyerEmail,
+            subject: 'Order Confirmed',
+            message: `Hi ${buyerName}, your order for "${product.productName}" (${orderId}) has been confirmed. You paid ₹${product.price}. Thank you!`,
+          });
+        }
         setProcessing(false);
         setSuccess(true);
-        setTimeout(() => navigate('/dashboard'), 4000);
+        setTimeout(() => navigate(user ? '/dashboard' : '/buyer'), 4000);
       }
     }, 2500);
   };
@@ -185,6 +182,25 @@ export const Checkout = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Payment Form */}
           <div className="lg:col-span-2 space-y-4">
+
+            {/* Guest Info (shown only when not logged in) */}
+            {!user && (
+              <div className="bg-white rounded-2xl shadow-sm p-6 space-y-4">
+                <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Your Details</h2>
+                <input
+                  type="text" placeholder="Full Name" value={guestName}
+                  onChange={e => setGuestName(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black outline-none text-sm"
+                  required
+                />
+                <input
+                  type="email" placeholder="Email Address" value={guestEmail}
+                  onChange={e => setGuestEmail(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black outline-none text-sm"
+                  required
+                />
+              </div>
+            )}
 
             {/* Delivery Address */}
             <div className="bg-white rounded-2xl shadow-sm p-6">
