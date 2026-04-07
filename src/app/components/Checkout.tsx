@@ -113,13 +113,11 @@ export const Checkout = () => {
           deliveryAddress, paymentMethod: methodLabel,
           source: 'website', placedAt: new Date().toISOString(),
         });
-        if (user) {
-          sendEmail({
-            user_name: buyerName, user_email: buyerEmail,
-            subject: 'Order Confirmed',
-            message: `Hi ${buyerName}, your order for "${product.productName}" (${orderId}) has been confirmed. You paid ₹${product.price}. Thank you!`,
-          });
-        }
+        sendEmail({
+          user_name: buyerName, user_email: buyerEmail,
+          subject: 'Order Confirmed – UPCYCLE',
+          message: `Hi ${buyerName}, your order for "${product.productName}" (Order ID: ${orderId}) has been confirmed. You paid ₹${product.price} via ${methodLabel}. Your item will be delivered to: ${deliveryAddress}. Thank you for shopping sustainably!`,
+        });
         setProcessing(false);
         setSuccess(true);
         setTimeout(() => navigate(user ? '/dashboard' : '/buyer'), 4000);
