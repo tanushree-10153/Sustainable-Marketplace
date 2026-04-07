@@ -113,11 +113,11 @@ export const Checkout = () => {
           deliveryAddress, paymentMethod: methodLabel,
           source: 'website', placedAt: new Date().toISOString(),
         });
-        if (user) {
+        if (buyerEmail) {
           sendEmail({
             user_name: buyerName, user_email: buyerEmail,
-            subject: 'Order Confirmed',
-            message: `Hi ${buyerName}, your order for "${product.productName}" (${orderId}) has been confirmed. You paid ₹${product.price}. Thank you!`,
+            subject: 'Order Confirmed — UPCYCLE',
+            message: `Hi ${buyerName},\n\nYour order has been confirmed! 🎉\n\nOrder ID: ${orderId}\nProduct: ${product.productName}\nAmount Paid: ₹${product.price}\nDelivery Address: ${deliveryAddress}\nPayment Method: ${methodLabel}\n\nThank you for shopping with UPCYCLE!\n\nFor any queries, contact us at:\nPhone: 9920678921\nEmail: support@upcycle.com`,
           });
         }
         setProcessing(false);

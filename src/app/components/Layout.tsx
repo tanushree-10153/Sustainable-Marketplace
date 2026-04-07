@@ -205,7 +205,7 @@ export const Layout = () => {
             <div>
               <h3 className="text-sm font-semibold mb-4">Contact</h3>
               <p className="text-sm text-gray-600">Email: support@upcycle.com</p>
-              <p className="text-sm text-gray-600">Phone: +1 234 567 8900</p>
+              <p className="text-sm text-gray-600">Phone: 9920678921</p>
             </div>
           </div>
           <div className="mt-8 pt-8 border-t border-gray-200 text-center">
